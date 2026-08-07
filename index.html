@@ -3,41 +3,63 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Câmera de Inspeção - [D]²FR</title>
+    <title>Inspecção Técnica - [D]²FR</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
     <style>
-        body { margin: 0; overflow: hidden; background-color: #000; color: white; font-family: sans-serif; }
-        #login-screen { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; background-color: #111827; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 20; padding: 20px; box-sizing: border-box; }
-        #app-screen { position: relative; width: 100vw; height: 100vh; display: none; justify-content: center; align-items: center; }
-        video { width: 100%; height: 100%; object-fit: cover; }
-        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: space-between; pointer-events: none; padding: 20px; box-sizing: border-box; }
+        body { margin: 0; overflow: hidden; background-color: #000; color: white; font-family: sans-serif; height: 100vh; width: 100vw;}
+        #login-screen { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; background-color: #111827; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 50; padding: 20px; box-sizing: border-box; }
+        #app-screen { position: relative; width: 100vw; height: 100vh; display: none; flex-direction: column; }
+        
+        /* CÂMERA EM FUNDO TOTAL */
+        video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
+        
+        /* CAMADA DE UI (INTERFACE) - MODELO TIMEMARK */
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; z-index: 10; pointer-events: none; }
         .interactive { pointer-events: auto; }
-        .glass-panel { background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(10px); border-radius: 12px; padding: 15px; }
+
+        /* CANTO SUPERIOR DIREITO - MAPA E BÚSSOLA */
+        #map-container { position: absolute; top: 15px; right: 15px; width: 120px; height: 120px; border-radius: 10px; overflow: hidden; border: 2px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.5); background: #333; }
+        #map-overlay { width: 100%; height: 100%; }
+        #compass-arrow { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(0deg); width: 30px; height: 30px; z-index: 1000; color: #E68A2E; text-shadow: 0 0 5px black; pointer-events: none;}
+
+        /* LATERAL DIREITA - CÓDIGO DE RASTREIO */
+        #validator-sidebar { position: absolute; top: 150px; right: 15px; transform: rotate(90deg); transform-origin: top right; color: rgba(255,255,255,0.7); font-family: 'Courier New', Courier, monospace; font-size: 10px; white-space: nowrap; }
+
+        /* BARRA INFERIOR - CARIMBO TIMEMARK */
+        #bottom-stamp-ui { position: absolute; bottom: 0; left: 0; width: 100%; height: 150px; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(5px); display: flex; pointer-events: auto; padding: 15px; gap: 15px;}
+        #stamp-perfil-img { width: 120px; height: 120px; border-radius: 10px; object-fit: cover; border: 2px solid white; background: #333; }
+        #stamp-data-container { flex: 1; display: flex; flex-direction: column; justify-content: space-between;}
+        
         #canvas { display: none; }
     </style>
 </head>
 <body>
+
     <div id="login-screen">
-        <div class="bg-gray-800 p-8 rounded-xl shadow-2xl w-full max-w-sm">
+        <div class="bg-gray-800 p-8 rounded-xl shadow-2xl w-full max-w-sm interactive">
             <div class="text-center mb-6">
                 <div class="w-16 h-16 bg-orange-500 rounded-full flex items-center justify-center mx-auto mb-3 shadow-lg">
                     <i class="fas fa-hard-hat text-3xl text-white"></i>
                 </div>
                 <h1 class="text-xl font-bold text-white">[D]²FR Engenharia</h1>
-                <p class="text-sm text-gray-400">Sistema de Inspeção</p>
+                <p class="text-sm text-gray-400">Sistema de Inspeção Técnica</p>
             </div>
             <div class="space-y-4">
                 <div>
-                    <label class="block text-sm text-gray-400 mb-1">E-mail</label>
-                    <input type="email" id="login-email" class="w-full bg-gray-700 text-white border border-gray-600 rounded-lg p-3" placeholder="seu@email.com">
+                    <label class="block text-sm text-gray-400 mb-1">E-mail Corporativo</label>
+                    <input type="email" id="login-email" class="w-full bg-gray-700 text-white border border-gray-600 rounded-lg p-3" placeholder="seu@d2fr.com.br">
                 </div>
                 <div>
-                    <label class="block text-sm text-gray-400 mb-1">Senha</label>
+                    <label class="block text-sm text-gray-400 mb-1">Senha de Acesso</label>
                     <input type="password" id="login-senha" class="w-full bg-gray-700 text-white border border-gray-600 rounded-lg p-3" placeholder="••••••••">
                 </div>
                 <button onclick="fazerLogin()" id="btn-login" class="w-full bg-orange-600 hover:bg-orange-500 text-white font-bold py-3 rounded-lg mt-4 transition">
-                    Entrar e Sincronizar
+                    Entrar e Sincronizar Dados
                 </button>
             </div>
         </div>
@@ -45,35 +67,52 @@
 
     <div id="app-screen">
         <video id="camera" autoplay playsinline></video>
+        
         <div id="ui-layer">
-            <div class="flex justify-between items-start interactive">
-                <div class="glass-panel text-sm flex flex-col gap-1">
-                    <span id="gps-status" class="text-yellow-400"><i class="fas fa-satellite-dish"></i> Buscando GPS...</span>
-                    <span id="coords" class="text-xs text-gray-300">Lat: --, Lon: --</span>
-                </div>
-                <div class="flex gap-2 flex-col items-end">
-                    <button onclick="fazerLogout()" class="bg-red-600 text-white p-3 rounded-full shadow-lg text-xs font-bold mb-2"><i class="fas fa-sign-out-alt"></i> Sair</button>
-                    <div class="flex gap-2">
-                        <button onclick="syncOfflineQueue()" class="bg-blue-600 p-3 rounded-full shadow-lg relative">
-                            <i class="fas fa-cloud-upload-alt"></i>
-                            <span id="queue-count" class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center hidden">0</span>
-                        </button>
-                    </div>
-                </div>
+            
+            <div class="absolute top-4 left-4 flex gap-2 interactive">
+                <button onclick="fazerLogout()" class="bg-red-600/80 text-white w-10 h-10 rounded-full shadow-lg"><i class="fas fa-sign-out-alt"></i></button>
+                <button onclick="syncOfflineQueue()" class="bg-blue-600/80 text-white w-10 h-10 rounded-full shadow-lg relative">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <span id="queue-count" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center hidden">0</span>
+                </button>
             </div>
 
-            <div class="flex flex-col gap-4 interactive">
-                <div class="glass-panel py-2 px-4 mb-2 flex justify-between items-center text-sm">
-                    <span class="font-bold text-orange-400" id="ui-nome-usuario">Usuário</span>
-                    <span class="text-gray-300 text-xs" id="ui-cargo-usuario">Cargo</span>
-                </div>
-                
-                <select id="modulo-select" class="w-full bg-gray-800 text-white border border-gray-600 p-3 rounded-lg shadow-lg text-lg"></select>
+            <div id="map-container" class="interactive">
+                <div id="map-overlay"></div>
+                <div id="compass-arrow"><i class="fas fa-arrow-up text-3xl"></i></div>
+            </div>
 
-                <div class="flex justify-center">
-                    <button onclick="takePhoto()" class="w-20 h-20 bg-white rounded-full border-4 border-gray-400 flex items-center justify-center active:bg-gray-300 transition shadow-[0_0_15px_rgba(0,0,0,0.5)]">
-                        <div class="w-16 h-16 bg-white rounded-full border border-gray-300"></div>
-                    </button>
+            <div id="validator-sidebar">Validado: <span id="ui-validator-code">GERANDO...</span></div>
+
+            <div class="absolute bottom-[170px] left-1/2 -translate-x-1/2 interactive z-20">
+                <button onclick="takePhoto()" class="w-20 h-20 bg-white/30 rounded-full border-4 border-white/80 flex items-center justify-center active:bg-white/60 transition shadow-xl">
+                    <div class="w-16 h-16 bg-white/80 rounded-full"></div>
+                </button>
+            </div>
+
+            <div id="bottom-stamp-ui">
+                <img id="stamp-perfil-img" src="" alt="Perfil">
+
+                <div id="stamp-data-container">
+                    <div class="space-y-1">
+                        <div class="text-orange-400 font-bold text-lg leading-tight" id="ui-nome-usuario">NOME DO USUÁRIO</div>
+                        <div class="text-gray-300 text-xs" id="ui-cargo-usuario">CARGO DO USUÁRIO</div>
+                        <div class="text-sm text-white pt-2"><i class="fas fa-map-marker-alt text-orange-500 w-5"></i> <span id="ui-address">Buscando endereço...</span></div>
+                        <div class="text-xs text-gray-300 pt-1"><i class="fas fa-globe w-5"></i> <span id="coords">Lat: --, Lon: --</span></div>
+                    </div>
+                    
+                    <select id="modulo-select" class="w-full bg-gray-800 text-white border border-gray-600 p-2 rounded text-sm interactive">
+                    </select>
+                </div>
+
+                <div class="w-[120px] h-[120px] flex flex-col items-center justify-between border-l border-gray-600 pl-3">
+                    <img id="stamp-logo-img" src="" alt="Logo" class="max-h-[60px] max-w-full object-contain">
+                    <div class="text-center">
+                        <div class="text-[10px] text-orange-500 font-bold">[D]²FR Engenharia</div>
+                        <div class="text-[8px] text-gray-400">Desenvolvido por @eng.daniel.filipe</div>
+                        <div class="text-[9px] text-green-400 pt-1 font-bold">Foto 100% Real</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -83,150 +122,176 @@
 
     <script>
         // =========================================================
-        console.log("[SISTEMA] Iniciando verificação de variáveis globais...");
-        const CONFIG_GAS_URL = "https://script.google.com/macros/s/AKfycbyYcjMX8exgy-b1HwZ2dCvQVxynFwpeAFfYXiBKBgLnlWTDt_HvKf61k0ukp_B5LK2fWA/exec";
-        console.log("[SISTEMA] Valor atual da URL do Google:", CONFIG_GAS_URL);
+        const CONFIG_GAS_URL = "COLE_A_SUA_URL_ATUAL_AQUI_SE_DER_ERRO"; 
         // =========================================================
 
         const video = document.getElementById('camera');
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
+        
         let currentLat = 0;
         let currentLon = 0;
+        let map = null; // Instância do Mapa
+        let mapMarker = null; // Marcador de posição
+        let currentHeading = 0; // Direção da bússola (alpha)
+        let currentValidator = ""; // Código de validação
+
+        // GERA CÓDIGO DE VALIDAÇÃO ÚNICO (Estilo TimeMark - 8 chars alfanuméricos)
+        function generateValidator() {
+            const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+            let result = '';
+            for (let i = 0; i < 8; i++) { result += chars.charAt(Math.floor(Math.random() * chars.length)); }
+            return result;
+        }
 
         function checkSession() {
-            console.log("[SISTEMA] Verificando se o usuário já tem sessão salva...");
             const email = localStorage.getItem('userEmail');
             const nome = localStorage.getItem('userName');
             
             if (email && nome) {
-                console.log("[SISTEMA] Sessão encontrada para:", nome);
                 document.getElementById('login-screen').style.display = 'none';
                 document.getElementById('app-screen').style.display = 'flex';
                 document.getElementById('ui-nome-usuario').innerText = nome;
                 document.getElementById('ui-cargo-usuario').innerText = localStorage.getItem('userRole');
                 
+                // Puxa as fotos dinâmicas da memória
+                document.getElementById('stamp-perfil-img').src = localStorage.getItem('userPhoto') || "https://dummyimage.com/120x120/333/fff.jpg&text=Foto";
+                document.getElementById('stamp-logo-img').src = localStorage.getItem('userLogo') || "https://dummyimage.com/120x60/333/fff.jpg&text=Logo";
+
+                // Inicia o código do validador para esta sessão
+                currentValidator = generateValidator();
+                document.getElementById('ui-validator-code').innerText = currentValidator;
+
                 renderizarModulos(); 
                 initCamera();
-                initGPS();
+                initGPSAndMap();
+                initCompass(); // Inicia a Bússola
             } else {
-                console.log("[SISTEMA] Nenhuma sessão ativa. Exibindo tela de login.");
                 document.getElementById('login-screen').style.display = 'flex';
                 document.getElementById('app-screen').style.display = 'none';
             }
         }
 
         async function fazerLogin() {
-            console.log("[LOGIN] Botão de entrar clicado!");
             const email = document.getElementById('login-email').value;
             const senha = document.getElementById('login-senha').value;
-            console.log("[LOGIN] Email digitado:", email);
+            if(!email || !senha) return alert("Preencha e-mail e senha.");
 
-            if(!email || !senha) {
-                console.log("[LOGIN] Erro: Campos vazios.");
-                return alert("Preencha e-mail e senha.");
-            }
-            
-            if(!email || !senha) {
-                console.log("[LOGIN] Erro: Campos vazios.");
-                return alert("Preencha e-mail e senha.");
-            }
-
-            console.log("[LOGIN] A URL parece estar configurada corretamente...");
             const btn = document.getElementById('btn-login');
-
-            btn.innerText = "Sincronizando Dados...";
-            btn.disabled = true;
+            btn.innerText = "Sincronizando Dados..."; btn.disabled = true;
 
             try {
                 const urlCompleta = `${CONFIG_GAS_URL}?action=login&email=${encodeURIComponent(email)}&senha=${encodeURIComponent(senha)}`;
-                console.log("[LOGIN] Rota chamada (senha oculta):", `${CONFIG_GAS_URL}?action=login&email=${encodeURIComponent(email)}`);
-                
                 const response = await fetch(urlCompleta);
-                console.log("[LOGIN] Resposta bruta recebida do Google:", response);
-                
                 const data = await response.json();
-                console.log("[LOGIN] Dados decodificados do Google:", data);
 
                 if (data.status === "sucesso") {
-                    console.log("[LOGIN] Sucesso! Salvando dados no celular...");
                     localStorage.setItem('userEmail', email);
                     localStorage.setItem('userSenha', senha);
                     localStorage.setItem('userName', data.nome);
                     localStorage.setItem('userRole', data.cargo);
+                    localStorage.setItem('userLogo', data.logo); // NOVO
+                    localStorage.setItem('userPhoto', data.perfil); // NOVO
                     localStorage.setItem('modulosPlanilha', JSON.stringify(data.modulos));
                     
                     checkSession();
-                } else {
-                    console.log("[LOGIN] O Google recusou o acesso. Motivo:", data.mensagem);
-                    alert(data.mensagem);
-                }
-            } catch (err) {
-                console.error("[LOGIN] Ocorreu um erro catastrófico na conexão de internet ou no link:", err);
-                alert("Erro ao conectar com o servidor. Verifique a sua internet.");
-            } finally {
-                btn.innerText = "Entrar e Sincronizar";
-                btn.disabled = false;
-            }
+                } else { alert(data.mensagem); }
+            } catch (err) { alert("Erro ao conectar com o servidor. Verifique a sua internet."); } finally { btn.innerText = "Entrar e Sincronizar"; btn.disabled = false; }
         }
 
-        function renderizarModulos() {
-            console.log("[SISTEMA] Renderizando módulos no select...");
-            const select = document.getElementById('modulo-select');
-            select.innerHTML = ''; 
-            
-            const modulosStr = localStorage.getItem('modulosPlanilha');
-            if (modulosStr) {
-                const modulos = JSON.parse(modulosStr);
-                console.log("[SISTEMA] Módulos encontrados:", modulos);
-                modulos.forEach(mod => {
-                    const opt = document.createElement('option');
-                    opt.value = mod.id; 
-                    opt.innerText = mod.nome; 
-                    select.appendChild(opt);
-                });
-            }
-        }
-
-        function fazerLogout() {
-            console.log("[SISTEMA] Fazendo logout e limpando memória...");
-            localStorage.clear(); 
-            if(video.srcObject) {
-                video.srcObject.getTracks().forEach(track => track.stop());
-            }
-            checkSession();
-        }
-
-        async function initCamera() {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } } });
-                video.srcObject = stream;
-            } catch (err) {
-                console.error("[CAMERA] Erro de permissão:", err);
-            }
-        }
-
-        function initGPS() {
+        // INICIA GPS E O MAPA SATÉLITE AO VIVO NA TELA
+        function initGPSAndMap() {
             if ("geolocation" in navigator) {
                 navigator.geolocation.watchPosition(
                     (position) => {
                         currentLat = position.coords.latitude;
                         currentLon = position.coords.longitude;
-                        document.getElementById('gps-status').innerHTML = '<i class="fas fa-map-marker-alt"></i> GPS Ativo';
-                        document.getElementById('gps-status').className = 'text-green-400';
-                        document.getElementById('coords').innerText = `Lat: ${currentLat.toFixed(5)}, Lon: ${currentLon.toFixed(5)}`;
+                        document.getElementById('coords').innerText = `${currentLat.toFixed(5)}, ${currentLon.toFixed(5)}`;
+                        
+                        // Atualiza o Mapa Satélite Dinâmico
+                        updateLiveMap(currentLat, currentLon);
+                        
+                        // Busca o endereço aproximado (Requer internet)
+                        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${currentLat}&lon=${currentLon}&zoom=18&addressdetails=1`)
+                            .then(res => res.json())
+                            .then(data => {
+                                document.getElementById('ui-address').innerText = data.display_name || "Endereço não encontrado";
+                            })
+                            .catch(() => document.getElementById('ui-address').innerText = "Erro ao buscar endereço");
                     },
-                    (error) => {
-                        console.error("[GPS] Erro:", error);
-                    }, { enableHighAccuracy: true }
+                    (error) => alert("Erro ao acessar GPS. Permita o acesso."), { enableHighAccuracy: true }
                 );
             }
         }
 
-        window.onload = () => {
-            console.log("[SISTEMA] Aplicativo carregado. Iniciando rotinas...");
-            checkSession();
-        };
+        // INICIA O MAPA LEAFLET NA TELA (SATELLITE)
+        function updateLiveMap(lat, lon) {
+            if (!map) {
+                // Inicializa o mapa focado na posição
+                map = L.map('map-overlay', { zoomControl: false, attributionControl: false }).setView([lat, lon], 17);
+                
+                // Adiciona camada Satélite Esri (Gratuita e sem API Key)
+                L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                    maxZoom: 19, attribution: 'Tiles &copy; Esri'
+                }).addTo(map);
+
+                // Marcador de posição
+                var myIcon = L.divIcon({className: 'relative', html: '<div class="w-3 h-3 bg-red-500 rounded-full border border-white"></div>', iconSize: [12, 12]});
+                mapMarker = L.marker([lat, lon], {icon: myIcon}).addTo(map);
+            } else {
+                // Apenas move o mapa e o marcador
+                map.setView([lat, lon]);
+                mapMarker.setLatLng([lat, lon]);
+            }
+        }
+
+        // INICIA A BÚSSOLA (Giroscópio) PARA MOSTRAR A DIREÇÃO DO CELULAR
+        function initCompass() {
+            // Requer HTTPS e permissão do usuário
+            if (window.DeviceOrientationEvent && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                DeviceOrientationEvent.requestPermission()
+                    .then(response => {
+                        if (response == 'granted') {
+                            window.addEventListener('deviceorientation', handleOrientation, true);
+                        }
+                    })
+                    .catch(console.error);
+            } else if (window.DeviceOrientationEvent) {
+                window.addEventListener('deviceorientation', handleOrientation, true);
+            } else { console.log("Bússola não suportada."); }
+        }
+
+        function handleOrientation(event) {
+            // A bússola real é o 'alpha' absoluto (deviceorientationabsolute) ou compensado pelo 'webkitCompassHeading'
+            if (event.webkitCompassHeading) { currentHeading = event.webkitCompassHeading; } // iOS
+            else if (event.absolute) { currentHeading = 360 - event.alpha; } // Android absoluto
+            else { currentHeading = 360 - event.alpha; } // Genérico (menos preciso)
+
+            // Rotaciona a seta na tela
+            document.getElementById('compass-arrow').style.transform = `translate(-50%, -50%) rotate(${currentHeading}deg)`;
+        }
+
+        // --- AS PRÓXIMAS FUNÇÕES (Canvas/Foto) SERÃO ATUALIZADAS NA ETAPA 2 ---
+
+        function applyStamp() {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            return canvas.toDataURL('image/jpeg', 0.85);
+        }
+
+        function takePhoto() {
+            const base64Image = applyStamp();
+            const payload = { image: base64Image, moduloId: document.getElementById('modulo-select').value, moduloNome: document.getElementById('modulo-select').options[document.getElementById('modulo-select').selectedIndex].text, email: localStorage.getItem('userEmail'), senha: localStorage.getItem('userSenha') };
+            uploadImage(payload);
+        }
+
+        function uploadImage(payload) { fetch(CONFIG_GAS_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) }).then(() => alert("Foto salva no Drive!")).catch(() => alert("Salvando offline...")); }
+        function renderizarModulos() { /* (Inalterado, puxa da memória) */ const select = document.getElementById('modulo-select'); select.innerHTML = ''; JSON.parse(localStorage.getItem('modulosPlanilha') || '[]').forEach(mod => { const opt = document.createElement('option'); opt.value = mod.id; opt.innerText = mod.nome; select.appendChild(opt); }); }
+        function fazerLogout() { localStorage.clear(); if(video.srcObject) video.srcObject.getTracks().forEach(track => track.stop()); checkSession(); }
+        async function initCamera() { try { const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } } }); video.srcObject = stream; } catch (err) { alert("Acesso à câmera negado."); } }
+        
+        window.onload = checkSession;
     </script>
 </body>
 </html>

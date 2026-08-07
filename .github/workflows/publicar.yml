@@ -1,0 +1,25 @@
+name: Publicar Site com Secret
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Baixar o código do repositório
+        uses: actions/checkout@v3
+
+      - name: Injetar a URL do Google Apps Script
+        run: |
+          sed -i 's|INJETAR_URL_AQUI|${{ secrets.URL_DO_SISTEMA }}|g' index.html
+
+      - name: Publicar no GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./

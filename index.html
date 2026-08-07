@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Inspeção Técnica - [D]²FR</title>
+    <title>Câmara de Inspeção - [D]²FR</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
@@ -11,55 +11,65 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <style>
-        /* RESET E TRAVAMENTO DO ECRÃ (Impede que o layout quebre ao rodar o telemóvel) */
-        body, html { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; background-color: #000; color: white; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; }
-        
-        #login-screen { position: fixed; inset: 0; background-color: #111827; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 50; padding: 20px; }
+        /* RESET E ECRÃ INTEIRO (SEM BARRAS PRETAS) */
+        body, html { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; background-color: #000; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; color: white; }
+        #login-screen { position: fixed; inset: 0; background-color: #111827; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; padding: 20px; }
         #app-screen { position: fixed; inset: 0; display: none; }
         
-        /* CÂMARA DE FUNDO */
+        /* CÂMARA EM FULLSCREEN TOTAL */
         video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
 
-        /* GRELHA DA CÂMARA (3x3 TimeMark Style) */
-        #grid-overlay { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
-        .grid-line { position: absolute; background-color: rgba(255, 255, 255, 0.4); }
-        .grid-line.h { width: 100%; height: 1px; left: 0; }
-        .grid-line.v { height: 100%; width: 1px; top: 0; }
-        
-        /* CAMADA DE INTERFACE (UI) */
-        #ui-layer { position: absolute; inset: 0; z-index: 10; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; }
+        /* GRELHA TIMEMARK 3x3 */
+        #grid { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+        .g-line { position: absolute; background: rgba(255, 255, 255, 0.3); }
+        .g-line.h { width: 100%; height: 1px; left: 0; }
+        .g-line.v { height: 100%; width: 1px; top: 0; }
+
+        /* INTERFACE (UI) EM CIMA DA CÂMARA */
+        #ui-layer { position: absolute; inset: 0; z-index: 10; pointer-events: none; }
         .interactive { pointer-events: auto; }
 
-        /* CANTO SUPERIOR ESQUERDO - MAPA E CONE VERDE */
-        #map-container { position: absolute; top: 20px; left: 20px; width: 100px; height: 100px; border-radius: 8px; overflow: hidden; border: 2px solid white; box-shadow: 0 4px 15px rgba(0,0,0,0.6); background: #333; z-index: 20; pointer-events: none; }
+        /* FAIXA LATERAL ESQUERDA (CARIMBO VERTICAL TIMEMARK) */
+        #left-banner { position: absolute; top: 0; left: 0; width: 45px; height: 100%; display: flex; flex-direction: column; z-index: 20; }
+        #lb-pic { width: 45px; height: 45px; background: white; border-bottom: 1px solid #ccc; flex-shrink: 0; }
+        #lb-pic img { width: 100%; height: 100%; object-fit: cover; }
+        #lb-orange { background: #e08e0b; width: 45px; height: 250px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 2px 0 10px rgba(0,0,0,0.5); }
+        #lb-dark { background: rgba(0,0,0,0.55); width: 45px; flex: 1; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(2px); }
+        .rotated-text { transform: rotate(-90deg); white-space: nowrap; font-weight: bold; font-size: 14px; letter-spacing: 1.5px; text-shadow: 1px 1px 2px rgba(0,0,0,0.8); }
+
+        /* CANTO SUPERIOR DIREITO (MAPA + LOGO + BRANDING) */
+        #top-right { position: absolute; top: 15px; right: 15px; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; z-index: 20; }
+        #map-container { width: 100px; height: 100px; border: 2px solid white; border-radius: 4px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.6); pointer-events: auto; background: #333; }
         #map-overlay { width: 100%; height: 100%; }
         
-        /* CANTO SUPERIOR DIREITO - TEXTOS TIMEMARK */
-        #top-right-branding { position: absolute; top: 20px; right: 20px; text-align: right; z-index: 20; text-shadow: 1px 1px 3px rgba(0,0,0,0.9); }
+        #ui-logo-empresa { max-height: 40px; max-width: 100px; object-fit: contain; filter: drop-shadow(1px 1px 3px rgba(0,0,0,0.8)); margin-top: 5px; }
+        
+        #branding-text { text-align: right; text-shadow: 1px 1px 3px black; }
+        .b-title { font-weight: 900; font-size: 15px; color: #ff9800; line-height: 1.1; }
+        .b-sub { font-size: 9px; color: #e5e7eb; }
+        .b-tag { display: inline-block; background: rgba(34, 197, 94, 0.2); border: 1px solid #4ade80; color: #4ade80; font-size: 10px; font-weight: bold; padding: 2px 6px; border-radius: 4px; margin-top: 4px; }
 
-        /* CÓDIGO DE VALIDAÇÃO (LATERAL DIREITA) */
-        #validator-sidebar { position: absolute; right: 5px; top: 50%; transform: translateY(-50%) rotate(90deg); transform-origin: center right; color: rgba(255,255,255,0.6); font-family: 'Courier New', Courier, monospace; font-size: 10px; letter-spacing: 1px; white-space: nowrap; z-index: 20; }
+        /* LATERAL DIREITA (VALIDADOR E FERRAMENTAS) */
+        #right-tools { position: absolute; right: 15px; top: 260px; display: flex; flex-direction: column; gap: 15px; align-items: center; z-index: 20; }
+        .tool-icon { width: 34px; height: 34px; border-radius: 50%; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px); font-size: 13px; }
+        #validator-sidebar { position: absolute; right: -50px; top: 150px; transform: rotate(90deg); font-family: 'Courier New', monospace; font-size: 11px; font-weight: bold; color: rgba(255,255,255,0.7); letter-spacing: 1px; text-shadow: 1px 1px 2px black; white-space: nowrap; }
 
-        /* ÁREA DE CONTROLOS INFERIOR (Fundo Escuro) */
-        #bottom-controls { position: absolute; bottom: 0; left: 0; width: 100%; height: 160px; background: rgba(0,0,0,0.8); z-index: 15; display: flex; flex-direction: column; justify-content: center; align-items: center; pointer-events: auto; }
+        /* CONTROLOS INFERIORES (100% TRANSPARENTES) */
+        #bottom-area { position: absolute; bottom: 0; left: 0; width: 100%; z-index: 20; display: flex; flex-direction: column; background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 40%, transparent 100%); padding-bottom: 20px; padding-left: 45px; /* Compensa a barra esquerda */ pointer-events: auto; }
         
-        /* BOTÃO DE DISPARO (SHUTTER) */
-        .shutter-btn { width: 70px; height: 70px; border-radius: 50%; border: 3px solid white; background: transparent; display: flex; justify-content: center; align-items: center; cursor: pointer; }
-        .shutter-btn .inner-circle { width: 54px; height: 54px; border-radius: 50%; background: white; transition: transform 0.1s; }
-        .shutter-btn:active .inner-circle { transform: scale(0.9); background: #ddd; }
+        #module-selector { display: flex; justify-content: center; margin-bottom: 20px; }
+        select { background: rgba(0,0,0,0.6); color: white; border: 1px solid rgba(255,255,255,0.4); padding: 6px 16px; border-radius: 20px; font-weight: bold; font-size: 13px; text-align: center; appearance: none; backdrop-filter: blur(4px); outline: none; }
 
-        /* CARIMBO (TIMEMARK CLONE) - Fica logo acima dos controlos pretos */
-        #timemark-stamp { position: absolute; bottom: 160px; left: 0; width: 100%; display: flex; flex-direction: column; pointer-events: none; z-index: 20; }
+        #action-row { display: flex; justify-content: space-around; align-items: center; padding: 0 20px; margin-bottom: 15px; }
+        .nav-btn { display: flex; flex-direction: column; align-items: center; gap: 6px; color: white; font-size: 11px; font-weight: 600; text-shadow: 1px 1px 2px black; cursor: pointer; }
+        .nav-btn i { font-size: 22px; filter: drop-shadow(1px 1px 2px black); }
         
-        .tm-module-banner { background-color: #d97706; color: white; font-weight: bold; padding: 6px 15px; width: max-content; font-size: 16px; box-shadow: 2px 2px 5px rgba(0,0,0,0.5); display: flex; align-items: center; gap: 8px;}
-        .tm-dark-banner { background-color: rgba(0, 0, 0, 0.5); backdrop-filter: blur(4px); color: #e5e7eb; font-size: 11px; padding: 6px 15px; display: flex; justify-content: space-between; align-items: center; }
-        .tm-white-footer { background-color: white; color: black; padding: 8px 15px; display: flex; justify-content: space-between; align-items: center; height: 55px; }
-        
-        .profile-pic-container { width: 36px; height: 36px; border-radius: 50%; border: 2px solid #ccc; overflow: hidden; flex-shrink: 0; }
-        .profile-pic-container img { width: 100%; height: 100%; object-fit: cover; }
-        
-        .logo-container { height: 35px; width: auto; max-width: 100px; display: flex; justify-content: flex-end; }
-        .logo-container img { max-height: 100%; object-fit: contain; }
+        .shutter-btn { width: 75px; height: 75px; border-radius: 50%; border: 4px solid white; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 15px rgba(0,0,0,0.5); }
+        .shutter-btn .inner { width: 58px; height: 58px; background: white; border-radius: 50%; transition: transform 0.1s; }
+        .shutter-btn:active .inner { transform: scale(0.9); background: #e5e5e5; }
+
+        #bottom-text-nav { display: flex; justify-content: center; gap: 15px; font-size: 12px; font-weight: bold; color: rgba(255,255,255,0.6); text-transform: uppercase; text-shadow: 1px 1px 2px black; }
+        #bottom-text-nav .active { color: #f59e0b; border-bottom: 2px solid #f59e0b; padding-bottom: 2px; }
 
         #canvas { display: none; }
     </style>
@@ -94,88 +104,69 @@
     <div id="app-screen">
         <video id="camera" autoplay playsinline></video>
         
-        <div id="grid-overlay">
-            <div class="grid-line h" style="top: 33.33%;"></div>
-            <div class="grid-line h" style="top: 66.66%;"></div>
-            <div class="grid-line v" style="left: 33.33%;"></div>
-            <div class="grid-line v" style="left: 66.66%;"></div>
+        <div id="grid">
+            <div class="g-line h" style="top: 33.33%;"></div>
+            <div class="g-line h" style="top: 66.66%;"></div>
+            <div class="g-line v" style="left: 33.33%;"></div>
+            <div class="g-line v" style="left: 66.66%;"></div>
         </div>
         
         <div id="ui-layer">
-            
-            <div id="map-container">
-                <div id="map-overlay"></div>
+            <div id="left-banner">
+                <div id="lb-pic"><img id="ui-perfil-img" src="" alt="Perfil"></div>
+                <div id="lb-orange"><span class="rotated-text">INSPEÇÃO TÉCNICA</span></div>
+                <div id="lb-dark"><span class="rotated-text" id="ui-time-vert">--/--/---- --:--</span></div>
             </div>
 
-            <div id="top-right-branding">
-                <div class="text-[16px] font-black text-orange-400 leading-none">[D]²FR<span class="text-white font-normal text-sm"> Eng</span></div>
-                <div class="text-[10px] text-gray-300">Foto 100% Real</div>
+            <div id="top-right">
+                <div id="map-container" class="interactive">
+                    <div id="map-overlay"></div>
+                </div>
+                <img id="ui-logo-img" src="" alt="Logo Empresa">
+                <div id="branding-text">
+                    <div class="b-title">[D]²FR Engenharia</div>
+                    <div class="b-sub">Desenvolvido por @eng.daniel.filipe</div>
+                    <div class="b-tag">Foto 100% Real</div>
+                </div>
             </div>
 
-            <div id="validator-sidebar">
-                <i class="fas fa-shield-alt text-gray-400 mr-1"></i> <span id="ui-validator-code">GERANDO...</span>
+            <div id="right-tools">
+                <div class="tool-icon interactive font-bold">1x</div>
+                <div class="tool-icon interactive"><i class="fas fa-edit"></i></div>
+                <div class="tool-icon interactive"><i class="fas fa-map-marker-alt"></i></div>
+                <div id="validator-sidebar"><i class="fas fa-shield-alt mr-1"></i> RASTREIO: <span id="ui-validator-code" class="text-green-400"></span></div>
             </div>
 
-            <div id="timemark-stamp">
-                <div class="tm-module-banner">
-                    <img src="https://cdn-icons-png.flaticon.com/512/3522/3522619.png" style="width: 24px; filter: brightness(0) invert(1);" alt="icon">
-                    <span id="ui-modulo-nome-display">MÓDULO</span>
+            <div id="bottom-area">
+                <div id="module-selector" class="interactive">
+                    <select id="modulo-select"></select>
                 </div>
                 
-                <div class="tm-dark-banner">
-                    <div class="flex flex-col gap-1">
-                        <div>
-                            <span class="font-bold text-gray-300">Time</span> 
-                            <span id="ui-time" class="ml-2 font-bold text-white">Buscando hora...</span>
-                        </div>
-                        <div class="text-[10px] text-gray-300 w-full overflow-hidden whitespace-nowrap text-ellipsis max-w-[80vw]" id="ui-address">
-                            Buscando GPS e Endereço...
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="tm-white-footer">
-                    <div class="flex items-center gap-3">
-                        <div class="profile-pic-container">
-                            <img id="stamp-perfil-img" src="" alt="Perfil">
-                        </div>
-                        <div class="flex flex-col">
-                            <span class="font-bold text-[14px] leading-tight" id="ui-nome-usuario">NOME</span>
-                            <span class="text-[11px] text-gray-600 font-semibold" id="ui-cargo-usuario">CARGO</span>
-                        </div>
-                    </div>
-                    <div class="logo-container">
-                        <img id="stamp-logo-img" src="" alt="Logo">
-                    </div>
-                </div>
-            </div>
-
-            <div id="bottom-controls">
-                <div class="w-full px-6 flex justify-between items-center mb-4 text-white text-xs interactive">
-                    
-                    <div class="flex flex-col items-center gap-1 cursor-pointer" onclick="syncOfflineQueue()">
-                        <div class="relative">
-                            <i class="fas fa-cloud-upload-alt text-2xl"></i>
+                <div id="action-row">
+                    <div class="nav-btn interactive" onclick="syncOfflineQueue()">
+                        <div style="position:relative;">
+                            <i class="far fa-image"></i>
                             <span id="queue-count" class="absolute -top-2 -right-2 bg-red-500 text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center hidden">0</span>
                         </div>
-                        <span>Uploads</span>
+                        <span>Galeria</span>
                     </div>
-
-                    <div class="shutter-btn" onclick="takePhoto()">
-                        <div class="inner-circle"></div>
+                    
+                    <div class="shutter-btn interactive" onclick="takePhoto()">
+                        <div class="inner"></div>
                     </div>
-
-                    <div class="flex flex-col items-center gap-1">
-                        <select id="modulo-select" onchange="atualizarNomeModulo()" class="bg-transparent text-white font-bold text-center appearance-none outline-none cursor-pointer border-b border-gray-500 pb-1">
-                        </select>
-                        <span class="text-gray-400">Selecionar Módulo</span>
+                    
+                    <div class="nav-btn interactive" onclick="fazerLogout()">
+                        <i class="fas fa-power-off text-red-400"></i>
+                        <span class="text-red-400">Sair</span>
                     </div>
                 </div>
-                
-                <div class="flex gap-6 text-gray-400 text-xs font-bold uppercase tracking-wider">
+
+                <div id="bottom-text-nav">
+                    <span>Relatórios</span>
                     <span>Vídeo</span>
-                    <span class="text-white border-b-2 border-white pb-1">Foto</span>
-                    <button onclick="fazerLogout()" class="text-red-400"><i class="fas fa-sign-out-alt"></i> Sair</button>
+                    <span class="active">Foto</span>
+                    <span>Ponto</span>
+                    <span>Checklist</span>
                 </div>
             </div>
         </div>
@@ -192,34 +183,32 @@
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
         
-        let currentLat = 0;
-        let currentLon = 0;
         let map = null; 
         let mapMarker = null; 
-        let currentHeading = 0; 
-        let currentValidator = ""; 
+        let targetHeading = 0; 
+        let currentHeading = 0; // Para a bússola suave
 
-        // RELÓGIO (Formato TimeMark)
+        // HACK PARA GOOGLE DRIVE IMAGES (Converte o link uc? para thumbnail direto)
+        function formatDriveUrl(url) {
+            if (!url) return "";
+            const match = url.match(/id=([a-zA-Z0-9_-]+)/);
+            if (match) return `https://drive.google.com/thumbnail?id=${match[1]}&sz=w800`;
+            return url;
+        }
+
+        // RELÓGIO
         setInterval(() => {
             const now = new Date();
-            const dias = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-            const strData = `${dias[now.getDay()]}, ${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()}`;
+            const strData = `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()}`;
             const strHora = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
-            document.getElementById('ui-time').innerText = `${strData} ${strHora}`;
+            document.getElementById('ui-time-vert').innerText = `${strData} ${strHora}`;
         }, 1000);
 
         function generateValidator() {
             const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-            let result = 'TM-';
+            let result = '';
             for (let i = 0; i < 8; i++) result += chars.charAt(Math.floor(Math.random() * chars.length));
             return result;
-        }
-
-        function atualizarNomeModulo() {
-            const select = document.getElementById('modulo-select');
-            if(select.options.length > 0) {
-                document.getElementById('ui-modulo-nome-display').innerText = select.options[select.selectedIndex].text;
-            }
         }
 
         function checkSession() {
@@ -230,20 +219,21 @@
                 document.getElementById('login-screen').style.display = 'none';
                 document.getElementById('app-screen').style.display = 'block'; 
                 
-                document.getElementById('ui-nome-usuario').innerText = nome;
-                document.getElementById('ui-cargo-usuario').innerText = localStorage.getItem('userRole');
-                document.getElementById('stamp-perfil-img').src = localStorage.getItem('userPhoto') || "https://dummyimage.com/100x100/333/fff.jpg&text=F";
-                document.getElementById('stamp-logo-img').src = localStorage.getItem('userLogo') || "https://dummyimage.com/200x100/fff/000.png&text=LOGO";
+                // Aplica o Hack do Google Drive para carregar a foto e a logo
+                const fotoOriginal = localStorage.getItem('userPhoto');
+                const logoOriginal = localStorage.getItem('userLogo');
+                document.getElementById('ui-perfil-img').src = formatDriveUrl(fotoOriginal) || "https://dummyimage.com/100/333/fff&text=Foto";
+                document.getElementById('ui-logo-img').src = formatDriveUrl(logoOriginal) || "https://dummyimage.com/200x100/333/fff&text=LOGO";
 
-                currentValidator = generateValidator();
-                document.getElementById('ui-validator-code').innerText = currentValidator;
+                document.getElementById('ui-validator-code').innerText = generateValidator();
 
                 renderizarModulos(); 
                 initCamera();
                 initGPSAndMap();
                 
-                // Força o redimensionamento do Leaflet para evitar o bug cinzento
+                // Força o mapa a recalcular o tamanho sem bugar
                 setTimeout(() => { if(map) map.invalidateSize(); }, 500);
+                setTimeout(() => { if(map) map.invalidateSize(); }, 1500);
             } else {
                 document.getElementById('login-screen').style.display = 'flex';
                 document.getElementById('app-screen').style.display = 'none';
@@ -255,11 +245,11 @@
             const senha = document.getElementById('login-senha').value;
             if(!email || !senha) return alert("Preencha e-mail e senha.");
 
-            // Pedido de permissão para a bússola (Crucial para iOS)
+            // Pede permissão da bússola ao clicar no botão
             requestCompassPermission();
 
             const btn = document.getElementById('btn-login');
-            btn.innerText = "Sincronizando..."; btn.disabled = true;
+            btn.innerText = "A Autenticar..."; btn.disabled = true;
 
             try {
                 const urlCompleta = `${CONFIG_GAS_URL}?action=login&email=${encodeURIComponent(email)}&senha=${encodeURIComponent(senha)}`;
@@ -277,7 +267,7 @@
                     
                     checkSession();
                 } else { alert(data.mensagem); }
-            } catch (err) { alert("Erro de conexão. Verifique se o URL público foi inserido corretamente no código."); } finally { btn.innerText = "AUTENTICAR"; btn.disabled = false; }
+            } catch (err) { alert("Erro de ligação."); } finally { btn.innerText = "AUTENTICAR"; btn.disabled = false; }
         }
 
         // ==========================================
@@ -287,40 +277,24 @@
             if ("geolocation" in navigator) {
                 navigator.geolocation.watchPosition(
                     (position) => {
-                        currentLat = position.coords.latitude;
-                        currentLon = position.coords.longitude;
-                        
-                        updateLiveMap(currentLat, currentLon);
-                        
-                        // Busca a morada
-                        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${currentLat}&lon=${currentLon}&zoom=18&addressdetails=1`)
-                            .then(res => res.json())
-                            .then(data => {
-                                const end = data.address;
-                                const rua = end.road || end.pedestrian || "";
-                                const bairro = end.suburb || end.neighbourhood || "";
-                                document.getElementById('ui-address').innerText = `${rua}, ${bairro} | Lat: ${currentLat.toFixed(5)}, Lon: ${currentLon.toFixed(5)}`;
-                            })
-                            .catch(() => document.getElementById('ui-address').innerText = `Lat: ${currentLat.toFixed(5)}, Lon: ${currentLon.toFixed(5)}`);
+                        updateLiveMap(position.coords.latitude, position.coords.longitude);
                     },
-                    (error) => console.log("GPS erro:", error), { enableHighAccuracy: true, maximumAge: 0 }
+                    (error) => console.log("GPS erro:", error), { enableHighAccuracy: true }
                 );
             }
         }
 
         function updateLiveMap(lat, lon) {
             if (!map) {
-                // Mapa bloqueado sem zoom ou arrasto (como no TimeMark)
                 map = L.map('map-overlay', { zoomControl: false, attributionControl: false, dragging: false, touchZoom: false, doubleClickZoom: false, scrollWheelZoom: false }).setView([lat, lon], 17);
                 L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 }).addTo(map);
 
-                // O PONTO AZUL COM O CONE VERDE (Igual ao Google Maps/TimeMark)
                 var iconHtml = `
                     <div style="position: relative; width: 60px; height: 60px; margin-left: -30px; margin-top: -30px;">
-                        <svg id="cone-svg" viewBox="0 0 100 100" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; transition: transform 0.1s;">
+                        <svg id="cone-svg" viewBox="0 0 100 100" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">
                             <polygon points="50,50 15,0 85,0" fill="rgba(0, 255, 0, 0.5)" />
                         </svg>
-                        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 14px; height: 14px; background-color: #2196F3; border: 2.5px solid white; border-radius: 50%; box-shadow: 0 0 5px rgba(0,0,0,0.8);"></div>
+                        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 12px; height: 12px; background-color: #2196F3; border: 2px solid white; border-radius: 50%; box-shadow: 0 0 5px rgba(0,0,0,0.8);"></div>
                     </div>
                 `;
                 var customIcon = L.divIcon({className: 'dummy', html: iconHtml, iconSize: [0, 0]});
@@ -330,6 +304,22 @@
                 mapMarker.setLatLng([lat, lon]);
             }
         }
+
+        // BÚSSOLA SUAVE (Animação contínua)
+        function animateCompass() {
+            let diff = targetHeading - currentHeading;
+            if (diff > 180) diff -= 360;
+            if (diff < -180) diff += 360;
+            
+            // Interpolação suave a 10%
+            currentHeading += diff * 0.1; 
+
+            const cone = document.getElementById('cone-svg');
+            if (cone) cone.style.transform = `rotate(${currentHeading}deg)`;
+            
+            requestAnimationFrame(animateCompass);
+        }
+        animateCompass(); // Inicia o loop de suavização
 
         function requestCompassPermission() {
             if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
@@ -349,26 +339,21 @@
             else if (event.alpha !== null) { heading = 360 - event.alpha; }
 
             if (heading !== null) {
-                // Roda o cone verde dentro do mapa
                 let screenOrientation = (screen.orientation || {}).angle || window.orientation || 0;
-                currentHeading = (heading + screenOrientation) % 360;
-                
-                const cone = document.getElementById('cone-svg');
-                if(cone) cone.style.transform = `rotate(${currentHeading}deg)`;
+                targetHeading = (heading + screenOrientation) % 360; // Define o alvo da suavização
             }
         }
 
         function takePhoto() {
-            alert("A interface visual está pronta! Na ETAPA 2, vamos fundir este layout magnífico diretamente na foto JPG final.");
+            alert("Layout da ETAPA 1 finalizado! Se aprovar o aspeto, passamos para a ETAPA 2 (Carimbar a imagem real).");
         }
 
         function renderizarModulos() { 
             const select = document.getElementById('modulo-select'); 
             select.innerHTML = ''; 
             JSON.parse(localStorage.getItem('modulosPlanilha') || '[]').forEach(mod => { 
-                const opt = document.createElement('option'); opt.value = mod.id; opt.innerText = mod.nome; select.appendChild(opt); 
+                const opt = document.createElement('option'); opt.value = mod.id; opt.innerText = `< ${mod.nome} >`; select.appendChild(opt); 
             }); 
-            atualizarNomeModulo();
         }
         
         function fazerLogout() { localStorage.clear(); if(video.srcObject) video.srcObject.getTracks().forEach(track => track.stop()); checkSession(); }

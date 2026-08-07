@@ -11,90 +11,18 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <style>
-        /* RESET E ECRÃ TRAVADO */
         body, html { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; background-color: #000; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; color: white; }
+        
         #login-screen { position: fixed; inset: 0; background-color: #111827; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; padding: 20px; }
-        #app-screen { position: fixed; inset: 0; display: none; }
         
-        /* CÂMARA EM FULLSCREEN */
-        video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
-
-        /* GRELHA TIMEMARK 3x3 */
-        #grid { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
-        .g-line { position: absolute; background: rgba(255, 255, 255, 0.4); }
-        .g-line.h { width: 100%; height: 1px; left: 0; }
-        .g-line.v { height: 100%; width: 1px; top: 0; }
-
-        /* INTERFACE (UI) EM CIMA DA CÂMARA */
-        #ui-layer { position: absolute; inset: 0; z-index: 10; pointer-events: none; }
-        .interactive { pointer-events: auto; }
-
-        /* CANTO SUPERIOR ESQUERDO: MAPA TIMEMARK */
-        #top-left-map { position: absolute; top: 15px; left: 15px; z-index: 20; }
-        #map-container { width: 110px; height: 110px; border: 2.5px solid white; border-radius: 6px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.7); pointer-events: auto; background: #333; }
-        #map-overlay { width: 100%; height: 100%; }
-
-        /* CANTO SUPERIOR DIREITO: BRANDING */
-        #top-right-branding { position: absolute; top: 15px; right: 15px; text-align: right; z-index: 20; text-shadow: 1px 1px 4px black; }
-        .brand-title { font-weight: 900; font-size: 16px; color: #fbbf24; line-height: 1; }
-        .brand-sub { font-size: 10px; color: #d1d5db; margin-bottom: 4px; }
-        .brand-tag { display: inline-block; background: rgba(255,255,255,0.2); backdrop-filter: blur(2px); border: 1px solid rgba(255,255,255,0.5); font-size: 9px; padding: 2px 6px; border-radius: 3px; font-weight: bold; }
-
-        /* VALIDADOR LATERAL DIREITO */
-        #validator-sidebar { position: absolute; right: 5px; top: 40%; transform: rotate(90deg); transform-origin: center right; font-family: 'Courier New', monospace; font-size: 10px; color: rgba(255,255,255,0.6); letter-spacing: 1px; text-shadow: 1px 1px 2px black; white-space: nowrap; z-index: 20; }
-
-        /* ========================================= */
-        /* O CARIMBO EXATO DO TIMEMARK (BOTTOM LEFT) */
-        /* ========================================= */
-        #timemark-stamp { position: absolute; bottom: 130px; left: 0; width: 100%; z-index: 20; display: flex; flex-direction: column; pointer-events: none; }
-        
-        /* 1. BARRA LARANJA (Módulo) */
-        .tm-orange-bar { background-color: #d97706; padding: 6px 12px; display: inline-flex; align-items: center; gap: 8px; width: max-content; max-width: 80%; border-top-right-radius: 4px; box-shadow: 2px 2px 5px rgba(0,0,0,0.5); }
-        .tm-orange-bar img { height: 22px; width: auto; background: white; padding: 2px; border-radius: 3px; }
-        .tm-orange-bar span { color: white; font-weight: 800; font-size: 15px; text-shadow: 1px 1px 2px rgba(0,0,0,0.6); }
-
-        /* 2. BARRA CINZENTA (Data/Hora e Localização) */
-        .tm-gray-bar { background-color: rgba(0, 0, 0, 0.65); backdrop-filter: blur(4px); padding: 4px 12px; display: inline-flex; flex-direction: column; width: max-content; min-width: 60%; max-width: 90%; box-shadow: 2px 2px 5px rgba(0,0,0,0.5); }
-        .tm-time-row { display: flex; align-items: center; gap: 8px; }
-        .tm-gray-bar .lbl { color: #d1d5db; font-weight: bold; font-size: 12px; }
-        .tm-gray-bar .val { color: white; font-weight: bold; font-size: 12px; }
-        .tm-gray-bar .address { color: #9ca3af; font-size: 9px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-        /* 3. BARRA BRANCA (Perfil e Logo) - OCUPA A LARGURA TODA */
-        .tm-white-bar { background-color: rgba(255, 255, 255, 0.95); backdrop-filter: blur(5px); width: 100%; padding: 8px 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 -2px 10px rgba(0,0,0,0.3); border-top: 1px solid #e5e7eb; }
-        .tm-profile-area { display: flex; align-items: center; gap: 10px; }
-        .tm-profile-pic { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #d1d5db; overflow: hidden; background: #eee; flex-shrink: 0; }
-        .tm-profile-pic img { width: 100%; height: 100%; object-fit: cover; }
-        .tm-user-info { display: flex; flex-direction: column; }
-        .tm-user-info .name { color: black; font-weight: 900; font-size: 15px; line-height: 1.1; }
-        .tm-user-info .role { color: #4b5563; font-weight: 600; font-size: 11px; }
-        
-        .tm-logo-area { height: 35px; display: flex; justify-content: flex-end; align-items: center; }
-        .tm-logo-area img { max-height: 100%; max-width: 100px; object-fit: contain; }
-
-        /* CONTROLOS DA CÂMARA (RODAPÉ PRETO) */
-        #bottom-controls { position: absolute; bottom: 0; left: 0; width: 100%; height: 130px; background: black; z-index: 30; display: flex; flex-direction: column; justify-content: center; pointer-events: auto; }
-        
-        #action-row { display: flex; justify-content: space-around; align-items: center; padding: 0 20px; }
-        
-        .tool-col { display: flex; flex-direction: column; align-items: center; gap: 4px; color: white; cursor: pointer; }
-        .tool-col .icon-box { width: 45px; height: 45px; border-radius: 8px; background: #222; display: flex; align-items: center; justify-content: center; font-size: 20px; border: 1px solid #444; position: relative; }
-        .tool-col span { font-size: 10px; font-weight: bold; }
-
-        .shutter-btn { width: 70px; height: 70px; border-radius: 50%; border: 3px solid white; display: flex; align-items: center; justify-content: center; }
-        .shutter-btn .inner { width: 56px; height: 56px; background: white; border-radius: 50%; transition: transform 0.1s; }
-        .shutter-btn:active .inner { transform: scale(0.9); background: #ccc; }
-
-        select { background: transparent; color: white; border: none; font-weight: bold; text-align: center; appearance: none; outline: none; font-size: 11px; }
-
-        /* Canvas Escondido */
-        #canvas { display: none; }
+        select { outline: none; appearance: none; }
+        .text-shadow-md { text-shadow: 1px 1px 3px rgba(0,0,0,0.8); }
     </style>
 </head>
 <body>
 
     <div id="login-screen">
-        <div class="bg-gray-800/90 backdrop-blur-md p-8 rounded-2xl shadow-2xl w-full max-w-sm interactive border border-gray-600">
+        <div class="bg-gray-800/90 backdrop-blur-md p-8 rounded-2xl shadow-2xl w-full max-w-sm border border-gray-600">
             <div class="text-center mb-6">
                 <div class="w-20 h-20 bg-gradient-to-br from-orange-500 to-orange-700 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg border-2 border-orange-400">
                     <i class="fas fa-hard-hat text-4xl text-white"></i>
@@ -105,11 +33,11 @@
             <div class="space-y-4">
                 <div>
                     <label class="block text-xs font-bold text-gray-400 uppercase mb-1">E-mail Corporativo</label>
-                    <input type="email" id="login-email" class="w-full bg-gray-900 text-white border border-gray-600 rounded-lg p-3 focus:border-orange-500 focus:outline-none transition" placeholder="seu@d2fr.com">
+                    <input type="email" id="login-email" class="w-full bg-gray-900 text-white border border-gray-600 rounded-lg p-3 focus:border-orange-500 transition" placeholder="seu@d2fr.com.br">
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Senha</label>
-                    <input type="password" id="login-senha" class="w-full bg-gray-900 text-white border border-gray-600 rounded-lg p-3 focus:border-orange-500 focus:outline-none transition" placeholder="••••••••">
+                    <input type="password" id="login-senha" class="w-full bg-gray-900 text-white border border-gray-600 rounded-lg p-3 focus:border-orange-500 transition" placeholder="••••••••">
                 </div>
                 <button onclick="fazerLogin()" id="btn-login" class="w-full bg-orange-600 hover:bg-orange-500 text-white font-bold py-3.5 rounded-lg mt-6 shadow-lg shadow-orange-600/30 transition">
                     AUTENTICAR
@@ -118,104 +46,110 @@
         </div>
     </div>
 
-    <div id="app-screen">
-        <video id="camera" autoplay playsinline></video>
+    <div id="app-screen" class="fixed inset-0 hidden flex-col landscape:flex-row bg-black overflow-hidden">
         
-        <div id="grid">
-            <div class="g-line h" style="top: 33.33%;"></div>
-            <div class="g-line h" style="top: 66.66%;"></div>
-            <div class="g-line v" style="left: 33.33%;"></div>
-            <div class="g-line v" style="left: 66.66%;"></div>
-        </div>
-        
-        <div id="ui-layer">
+        <div class="flex-1 relative overflow-hidden bg-gray-900">
+            <video id="camera" class="absolute inset-0 w-full h-full object-cover" autoplay playsinline></video>
             
-            <div id="top-left-map">
-                <div id="map-container" class="interactive">
-                    <div id="map-overlay"></div>
+            <div class="absolute inset-0 z-10 pointer-events-none">
+                <div class="absolute w-full h-[1px] bg-white/40 top-1/3"></div>
+                <div class="absolute w-full h-[1px] bg-white/40 top-2/3"></div>
+                <div class="absolute h-full w-[1px] bg-white/40 left-1/3"></div>
+                <div class="absolute h-full w-[1px] bg-white/40 left-2/3"></div>
+            </div>
+
+            <div class="absolute top-4 right-4 z-20 flex flex-col items-end">
+                <div id="map-container" class="w-[100px] h-[100px] rounded border-2 border-white/80 shadow-[0_4px_15px_rgba(0,0,0,0.8)] overflow-hidden bg-gray-800 pointer-events-auto">
+                    <div id="map-overlay" class="w-full h-full"></div>
+                </div>
+                <div class="text-[10px] text-white font-bold mt-1 bg-black/50 px-2 py-0.5 rounded backdrop-blur">
+                    <i class="fas fa-location-arrow text-orange-400"></i> <span id="ui-compass-text">A calibrar...</span>
                 </div>
             </div>
 
-            <div id="top-right-branding">
-                <div class="brand-title">TimeMark <span style="font-weight:300; font-size:12px;">Clone</span></div>
-                <div class="brand-sub">by [D]²FR Engenharia</div>
-                <div class="brand-tag">Foto 100% Real</div>
+            <div class="absolute top-4 left-4 z-20 text-shadow-md">
+                <div class="font-black text-orange-400 text-lg leading-none">TimeMark <span class="font-light text-sm text-white">Clone</span></div>
+                <div class="text-[9px] text-gray-200 mt-1">by [D]²FR Engenharia</div>
+                <div class="inline-block bg-green-500/30 border border-green-400 text-green-400 text-[9px] font-bold px-1.5 py-0.5 rounded mt-1 backdrop-blur-sm">Foto 100% Real</div>
             </div>
 
-            <div id="validator-sidebar">
-                <i class="fas fa-shield-alt"></i> RASTREIO: <span id="ui-validator-code"></span>
+            <div class="absolute top-1/2 right-1 -translate-y-1/2 rotate-90 origin-right text-white/70 font-mono text-[10px] tracking-widest z-20 text-shadow-md whitespace-nowrap landscape:hidden">
+                <i class="fas fa-shield-alt"></i> VALIDADOR: <span id="ui-validator-code" class="text-orange-400 font-bold"></span>
             </div>
 
-            <div id="timemark-stamp">
+            <div id="timemark-stamp" class="absolute bottom-0 left-0 w-full z-20 flex flex-col pointer-events-none drop-shadow-xl">
                 <div class="flex flex-col items-start w-full">
-                    <div class="tm-orange-bar">
-                        <img id="stamp-logo-icon" src="https://cdn-icons-png.flaticon.com/512/3522/3522619.png" alt="icon">
-                        <span id="ui-modulo-nome-display">MÓDULO 1</span>
+                    <div class="bg-[#d97706] text-white flex items-center gap-2 px-3 py-1.5 w-max max-w-[80%] rounded-tr-md shadow-lg">
+                        <img id="stamp-logo-icon" src="" class="h-4 w-auto object-contain bg-white rounded-sm p-[1px]">
+                        <span id="ui-modulo-nome-display" class="font-black text-[13px] uppercase tracking-wider text-shadow-md">MÓDULO</span>
                     </div>
-                    <div class="tm-gray-bar">
-                        <div class="tm-time-row">
-                            <span class="lbl">Time</span>
-                            <span class="val" id="ui-time">--/--/---- --:--</span>
-                        </div>
-                        <div class="address" id="ui-address">Buscando coordenadas GPS...</div>
+                    <div class="bg-black/65 backdrop-blur-md text-white px-3 py-1 w-max min-w-[65%] max-w-[95%] shadow-lg flex flex-col justify-center">
+                        <div class="text-[11px]"><span class="font-bold text-gray-400 mr-2">Time</span><span id="ui-time" class="font-bold tracking-wide">--/--/---- --:--</span></div>
+                        <div class="text-[9px] text-gray-400 mt-0.5 truncate w-full" id="ui-address">Buscando coordenadas GPS...</div>
                     </div>
                 </div>
                 
-                <div class="tm-white-bar">
-                    <div class="tm-profile-area">
-                        <div class="tm-profile-pic">
-                            <img id="stamp-perfil-img" src="" alt="Perfil">
+                <div class="bg-white/95 backdrop-blur-md w-full flex justify-between items-center px-3 py-2 shadow-inner border-t border-gray-300 pointer-events-auto">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full overflow-hidden border border-gray-300 shadow-sm flex-shrink-0 bg-gray-200">
+                            <img id="stamp-perfil-img" src="" class="w-full h-full object-cover">
                         </div>
-                        <div class="tm-user-info">
-                            <span class="name" id="ui-nome-usuario">NOME</span>
-                            <span class="role" id="ui-cargo-usuario">Cargo</span>
+                        <div class="flex flex-col">
+                            <span id="ui-nome-usuario" class="font-black text-black text-[14px] leading-none uppercase">NOME</span>
+                            <span id="ui-cargo-usuario" class="text-gray-600 text-[10px] font-bold leading-tight mt-0.5 uppercase">CARGO</span>
                         </div>
                     </div>
-                    <div class="tm-logo-area">
-                        <img id="stamp-logo-img" src="" alt="Logo">
+                    <div class="h-7 flex justify-end flex-shrink-0">
+                        <img id="stamp-logo-img" src="" class="h-full w-auto object-contain">
                     </div>
                 </div>
             </div>
+        </div>
 
-            <div id="bottom-controls">
-                <div id="action-row">
-                    <div class="tool-col interactive" onclick="syncOfflineQueue()">
-                        <div class="icon-box">
-                            <i class="far fa-image"></i>
-                            <span id="queue-count" class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center hidden border border-black">0</span>
-                        </div>
-                        <span>Uploads</span>
+        <div id="controls-area" class="bg-black z-30 flex flex-col justify-between pt-3 pb-2 px-2 landscape:w-[130px] landscape:h-full landscape:flex-row landscape:py-4 landscape:px-2 shadow-[0_-5px_20px_rgba(0,0,0,0.8)] landscape:shadow-[-5px_0_20px_rgba(0,0,0,0.8)] pointer-events-auto">
+            
+            <div class="flex justify-around items-center w-full landscape:flex-col landscape:h-full landscape:justify-around">
+                
+                <div class="flex flex-col items-center gap-1 cursor-pointer text-white" onclick="syncOfflineQueue()">
+                    <div class="w-11 h-11 rounded-full bg-gray-800 flex items-center justify-center relative border border-gray-600">
+                        <i class="far fa-image text-lg"></i>
+                        <span id="queue-count" class="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center hidden">0</span>
                     </div>
-                    
-                    <div class="shutter-btn interactive" onclick="takePhoto()">
-                        <div class="inner"></div>
+                    <span class="text-[9px] font-bold text-gray-400">Galeria</span>
+                </div>
+
+                <div class="w-[75px] h-[75px] rounded-full border-[3.5px] border-white flex items-center justify-center cursor-pointer active:scale-95 transition-transform" onclick="takePhoto()">
+                    <div class="w-[61px] h-[61px] bg-white rounded-full"></div>
+                </div>
+
+                <div class="flex flex-col items-center gap-1 text-white relative">
+                    <div class="w-11 h-11 rounded-full bg-gray-800 flex items-center justify-center border border-gray-600">
+                        <i class="fas fa-list-ul text-lg"></i>
                     </div>
-                    
-                    <div class="tool-col interactive">
-                        <div class="icon-box">
-                            <i class="fas fa-list-ul"></i>
-                        </div>
-                        <select id="modulo-select" onchange="atualizarNomeModulo()"></select>
-                    </div>
-                    
-                    <div class="tool-col interactive" onclick="fazerLogout()">
-                        <div class="icon-box" style="background: transparent; border: none; color: #ef4444;">
-                            <i class="fas fa-power-off text-2xl"></i>
-                        </div>
-                        <span style="color:#ef4444;">Sair</span>
-                    </div>
+                    <select id="modulo-select" onchange="atualizarNomeModulo()" class="absolute inset-0 opacity-0 w-full h-full cursor-pointer text-black bg-transparent"></select>
+                    <span class="text-[9px] font-bold text-gray-400">Modelos</span>
                 </div>
                 
-                <div class="flex justify-center gap-6 text-[10px] font-bold text-gray-400 mt-4 uppercase">
-                    <span>Vídeo</span>
-                    <span style="color:white; border-bottom:2px solid white; padding-bottom:2px;">Foto</span>
-                    <span>Ponto</span>
+                <div class="flex flex-col items-center gap-1 cursor-pointer text-red-500 landscape:hidden" onclick="fazerLogout()">
+                    <div class="w-11 h-11 rounded-full bg-red-900/20 flex items-center justify-center">
+                        <i class="fas fa-power-off text-lg"></i>
+                    </div>
+                    <span class="text-[9px] font-bold">Sair</span>
                 </div>
+            </div>
+
+            <div class="flex justify-center gap-4 text-[9px] font-black text-gray-500 uppercase pb-1 landscape:flex-col landscape:pb-0 landscape:pl-1 landscape:items-center">
+                <span>Vídeo</span>
+                <span class="text-white border-b-2 border-orange-500 pb-0.5 landscape:border-b-0 landscape:border-l-2 landscape:pl-1 landscape:text-orange-500">Foto</span>
+                <span>Ponto</span>
+                <span class="hidden landscape:flex flex-col items-center gap-1 text-red-500 mt-6 cursor-pointer" onclick="fazerLogout()">
+                    <div class="w-10 h-10 rounded-full bg-red-900/20 flex items-center justify-center border border-red-900/50"><i class="fas fa-power-off text-lg"></i></div>Sair
+                </span>
             </div>
         </div>
     </div>
 
-    <canvas id="canvas"></canvas>
+    <canvas id="canvas" class="hidden"></canvas>
 
     <script>
         // =========================================================
@@ -223,15 +157,12 @@
         // =========================================================
 
         const video = document.getElementById('camera');
-        const canvas = document.getElementById('canvas');
-        const ctx = canvas.getContext('2d');
-        
         let map = null; 
         let mapMarker = null; 
         let targetHeading = 0; 
         let currentHeading = 0; 
 
-        // HACK DO GOOGLE DRIVE (Aplica Thumbnail)
+        // Converte o link do Drive para uma miniatura em alta resolução
         function formatDriveUrl(url) {
             if (!url) return "";
             const match = url.match(/id=([a-zA-Z0-9_-]+)/);
@@ -239,7 +170,7 @@
             return url;
         }
 
-        // RELÓGIO (Estilo Qui, 06/08/2026 22:41)
+        // Relógio
         setInterval(() => {
             const now = new Date();
             const dias = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
@@ -251,18 +182,13 @@
         function generateValidator() {
             const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
             let result = '';
-            for (let i = 0; i < 10; i++) {
-                if (i===4) result += '-';
-                else result += chars.charAt(Math.floor(Math.random() * chars.length));
-            }
+            for (let i = 0; i < 10; i++) { if (i===4) result += '-'; else result += chars.charAt(Math.floor(Math.random() * chars.length)); }
             return result;
         }
 
         function atualizarNomeModulo() {
             const select = document.getElementById('modulo-select');
-            if(select.options.length > 0) {
-                document.getElementById('ui-modulo-nome-display').innerText = select.options[select.selectedIndex].text;
-            }
+            if(select.options.length > 0) document.getElementById('ui-modulo-nome-display').innerText = select.options[select.selectedIndex].text;
         }
 
         function checkSession() {
@@ -271,15 +197,14 @@
             
             if (email && nome) {
                 document.getElementById('login-screen').style.display = 'none';
-                document.getElementById('app-screen').style.display = 'block'; 
+                document.getElementById('app-screen').style.display = 'flex'; 
                 
                 document.getElementById('ui-nome-usuario').innerText = nome;
                 document.getElementById('ui-cargo-usuario').innerText = localStorage.getItem('userRole');
                 
-                // Aplicar as imagens de forma segura com o CSS ID correto!
                 const fotoOriginal = localStorage.getItem('userPhoto');
                 const logoOriginal = localStorage.getItem('userLogo');
-                document.getElementById('stamp-perfil-img').src = formatDriveUrl(fotoOriginal) || "https://dummyimage.com/100/333/fff&text=Foto";
+                document.getElementById('stamp-perfil-img').src = formatDriveUrl(fotoOriginal) || "https://dummyimage.com/100/ccc/fff&text=Foto";
                 
                 const logoFinal = formatDriveUrl(logoOriginal) || "https://dummyimage.com/200x100/fff/000.png&text=LOGO";
                 document.getElementById('stamp-logo-img').src = logoFinal;
@@ -291,7 +216,6 @@
                 initCamera();
                 initGPSAndMap();
                 
-                // Previne bug cinzento do mapa
                 setTimeout(() => { if(map) map.invalidateSize(); }, 500);
             } else {
                 document.getElementById('login-screen').style.display = 'flex';
@@ -304,7 +228,6 @@
             const senha = document.getElementById('login-senha').value;
             if(!email || !senha) return alert("Preencha e-mail e senha.");
 
-            // Pede permissão para a Bússola no iOS
             requestCompassPermission();
 
             const btn = document.getElementById('btn-login');
@@ -354,10 +277,9 @@
 
         function updateLiveMap(lat, lon) {
             if (!map) {
-                map = L.map('map-overlay', { zoomControl: false, attributionControl: false, dragging: false, touchZoom: false, doubleClickZoom: false, scrollWheelZoom: false }).setView([lat, lon], 17);
+                map = L.map('map-overlay', { zoomControl: false, attributionControl: false, dragging: false, touchZoom: false, doubleClickZoom: false, scrollWheelZoom: false }).setView([lat, lon], 18);
                 L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 }).addTo(map);
 
-                // CONE VERDE (Apontando para Cima = Norte na matriz SVG original)
                 var iconHtml = `
                     <div style="position: relative; width: 60px; height: 60px; margin-left: -30px; margin-top: -30px;">
                         <svg id="cone-svg" viewBox="0 0 100 100" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">
@@ -374,19 +296,13 @@
             }
         }
 
-        // ROTINA PARA LER O SENSOR MAGNÉTICO ABSOLUTO
         function requestCompassPermission() {
             if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-                DeviceOrientationEvent.requestPermission()
-                    .then(permissionState => { if (permissionState === 'granted') { startCompass(); } })
-                    .catch(console.error);
-            } else {
-                startCompass();
-            }
+                DeviceOrientationEvent.requestPermission().then(state => { if (state === 'granted') startCompass(); }).catch(console.error);
+            } else { startCompass(); }
         }
 
         function startCompass() {
-            // No Android, deviceorientationabsolute é o único que aponta para o Norte Magnético verdadeiro.
             if ('ondeviceorientationabsolute' in window) {
                 window.addEventListener('deviceorientationabsolute', handleOrientation);
             } else {
@@ -394,28 +310,31 @@
             }
         }
 
+        function getDirectionText(heading) {
+            const dirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+            return dirs[Math.round(((heading %= 360) < 0 ? heading + 360 : heading) / 45) % 8];
+        }
+
         function handleOrientation(event) {
             let heading = null;
-            if (event.webkitCompassHeading) { 
-                heading = event.webkitCompassHeading; // iOS 
-            } else if (event.absolute === true && event.alpha !== null) { 
-                heading = 360 - event.alpha; // Android (O Alpha roda no sentido anti-horário, subtrair inverte)
-            } else if (event.alpha !== null) { 
-                heading = 360 - event.alpha; // Fallback
-            }
+            if (event.webkitCompassHeading) { heading = event.webkitCompassHeading; }
+            else if (event.absolute === true && event.alpha !== null) { heading = 360 - event.alpha; }
+            else if (event.alpha !== null) { heading = 360 - event.alpha; }
 
             if (heading !== null) {
                 let screenOrientation = (screen.orientation || {}).angle || window.orientation || 0;
                 targetHeading = (heading + screenOrientation) % 360; 
+                
+                const compassText = document.getElementById('ui-compass-text');
+                if(compassText) compassText.innerText = `${getDirectionText(targetHeading)} ${Math.round(targetHeading)}°`;
             }
         }
 
-        // BÚSSOLA SUAVE (Animação contínua para evitar tremores)
         function animateCompass() {
             let diff = targetHeading - currentHeading;
             if (diff > 180) diff -= 360;
             if (diff < -180) diff += 360;
-            currentHeading += diff * 0.1; // Suavização a 10%
+            currentHeading += diff * 0.15; 
             
             const cone = document.getElementById('cone-svg');
             if (cone) cone.style.transform = `rotate(${currentHeading}deg)`;
@@ -424,8 +343,13 @@
         }
         animateCompass();
 
+        // Ouve a rotação do ecrã para corrigir o mapa
+        window.addEventListener("orientationchange", function() {
+            setTimeout(() => { if(map) map.invalidateSize(); }, 300);
+        });
+
         function takePhoto() {
-            alert("A interface visual está idêntica ao TimeMark e a bússola foi estabilizada. Pode dar o OK para iniciarmos a ETAPA 2 (Carimbar tudo na foto real!).");
+            alert("Agora sim! Layout fixo perfeito e bússola exata. Pode dar a aprovação para a ETAPA 2 (Imprimir a foto final).");
         }
 
         function renderizarModulos() { 

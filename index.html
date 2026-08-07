@@ -68,8 +68,7 @@
                     <span class="text-gray-300 text-xs" id="ui-cargo-usuario">Cargo</span>
                 </div>
                 
-                <select id="modulo-select" class="w-full bg-gray-800 text-white border border-gray-600 p-3 rounded-lg shadow-lg text-lg">
-                </select>
+                <select id="modulo-select" class="w-full bg-gray-800 text-white border border-gray-600 p-3 rounded-lg shadow-lg text-lg"></select>
 
                 <div class="flex justify-center">
                     <button onclick="takePhoto()" class="w-20 h-20 bg-white rounded-full border-4 border-gray-400 flex items-center justify-center active:bg-gray-300 transition shadow-[0_0_15px_rgba(0,0,0,0.5)]">
@@ -84,8 +83,9 @@
 
     <script>
         // =========================================================
-        // O Robô do GitHub vai injetar a URL do Secret aqui:
+        console.log("[SISTEMA] Iniciando verificação de variáveis globais...");
         const CONFIG_GAS_URL = "https://script.google.com/macros/s/AKfycbyYcjMX8exgy-b1HwZ2dCvQVxynFwpeAFfYXiBKBgLnlWTDt_HvKf61k0ukp_B5LK2fWA/exec";
+        console.log("[SISTEMA] Valor atual da URL do Google:", CONFIG_GAS_URL);
         // =========================================================
 
         const video = document.getElementById('camera');
@@ -95,10 +95,12 @@
         let currentLon = 0;
 
         function checkSession() {
+            console.log("[SISTEMA] Verificando se o usuário já tem sessão salva...");
             const email = localStorage.getItem('userEmail');
             const nome = localStorage.getItem('userName');
             
             if (email && nome) {
+                console.log("[SISTEMA] Sessão encontrada para:", nome);
                 document.getElementById('login-screen').style.display = 'none';
                 document.getElementById('app-screen').style.display = 'flex';
                 document.getElementById('ui-nome-usuario').innerText = nome;
@@ -108,31 +110,45 @@
                 initCamera();
                 initGPS();
             } else {
+                console.log("[SISTEMA] Nenhuma sessão ativa. Exibindo tela de login.");
                 document.getElementById('login-screen').style.display = 'flex';
                 document.getElementById('app-screen').style.display = 'none';
             }
         }
 
         async function fazerLogin() {
+            console.log("[LOGIN] Botão de entrar clicado!");
             const email = document.getElementById('login-email').value;
             const senha = document.getElementById('login-senha').value;
+            console.log("[LOGIN] Email digitado:", email);
 
-            if(!email || !senha) return alert("Preencha e-mail e senha.");
+            if(!email || !senha) {
+                console.log("[LOGIN] Erro: Campos vazios.");
+                return alert("Preencha e-mail e senha.");
+            }
             
             if(CONFIG_GAS_URL === "https://script.google.com/macros/s/AKfycbyYcjMX8exgy-b1HwZ2dCvQVxynFwpeAFfYXiBKBgLnlWTDt_HvKf61k0ukp_B5LK2fWA/exec") {
+                console.error("[CRÍTICO] O robô do GitHub não substituiu a URL! A variável continua como 'https://script.google.com/macros/s/AKfycbyYcjMX8exgy-b1HwZ2dCvQVxynFwpeAFfYXiBKBgLnlWTDt_HvKf61k0ukp_B5LK2fWA/exec'. O sistema vai abortar a conexão para não travar.");
                 return alert("ERRO DO SISTEMA: O servidor não configurou a URL secreta corretamente. Contate o administrador.");
             }
 
+            console.log("[LOGIN] A URL parece estar configurada corretamente. Iniciando conexão com o Google Sheets...");
             const btn = document.getElementById('btn-login');
             btn.innerText = "Sincronizando Dados...";
             btn.disabled = true;
 
             try {
                 const urlCompleta = `${CONFIG_GAS_URL}?action=login&email=${encodeURIComponent(email)}&senha=${encodeURIComponent(senha)}`;
+                console.log("[LOGIN] Rota chamada (senha oculta):", `${CONFIG_GAS_URL}?action=login&email=${encodeURIComponent(email)}`);
+                
                 const response = await fetch(urlCompleta);
+                console.log("[LOGIN] Resposta bruta recebida do Google:", response);
+                
                 const data = await response.json();
+                console.log("[LOGIN] Dados decodificados do Google:", data);
 
                 if (data.status === "sucesso") {
+                    console.log("[LOGIN] Sucesso! Salvando dados no celular...");
                     localStorage.setItem('userEmail', email);
                     localStorage.setItem('userSenha', senha);
                     localStorage.setItem('userName', data.nome);
@@ -141,9 +157,11 @@
                     
                     checkSession();
                 } else {
+                    console.log("[LOGIN] O Google recusou o acesso. Motivo:", data.mensagem);
                     alert(data.mensagem);
                 }
             } catch (err) {
+                console.error("[LOGIN] Ocorreu um erro catastrófico na conexão de internet ou no link:", err);
                 alert("Erro ao conectar com o servidor. Verifique a sua internet.");
             } finally {
                 btn.innerText = "Entrar e Sincronizar";
@@ -152,12 +170,14 @@
         }
 
         function renderizarModulos() {
+            console.log("[SISTEMA] Renderizando módulos no select...");
             const select = document.getElementById('modulo-select');
             select.innerHTML = ''; 
             
             const modulosStr = localStorage.getItem('modulosPlanilha');
             if (modulosStr) {
                 const modulos = JSON.parse(modulosStr);
+                console.log("[SISTEMA] Módulos encontrados:", modulos);
                 modulos.forEach(mod => {
                     const opt = document.createElement('option');
                     opt.value = mod.id; 
@@ -168,6 +188,7 @@
         }
 
         function fazerLogout() {
+            console.log("[SISTEMA] Fazendo logout e limpando memória...");
             localStorage.clear(); 
             if(video.srcObject) {
                 video.srcObject.getTracks().forEach(track => track.stop());
@@ -177,12 +198,10 @@
 
         async function initCamera() {
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } } 
-                });
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } } });
                 video.srcObject = stream;
             } catch (err) {
-                alert("Erro ao aceder à câmara. Verifique as permissões.");
+                console.error("[CAMERA] Erro de permissão:", err);
             }
         }
 
@@ -197,145 +216,14 @@
                         document.getElementById('coords').innerText = `Lat: ${currentLat.toFixed(5)}, Lon: ${currentLon.toFixed(5)}`;
                     },
                     (error) => {
-                        document.getElementById('gps-status').innerHTML = '<i class="fas fa-exclamation-triangle"></i> Erro GPS';
-                        document.getElementById('gps-status').className = 'text-red-400';
-                    },
-                    { enableHighAccuracy: true }
+                        console.error("[GPS] Erro:", error);
+                    }, { enableHighAccuracy: true }
                 );
             }
         }
 
-        function applyStamp() {
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-            const name = localStorage.getItem('userName');
-            const role = localStorage.getItem('userRole');
-            const company = "[D]²FR Soluções em Engenharia";
-            const selectElem = document.getElementById('modulo-select');
-            const moduleName = selectElem.options[selectElem.selectedIndex].text; 
-
-            const scale = canvas.width / 1920; 
-            const bottomBarHeight = 200 * scale;
-            
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
-            ctx.fillRect(0, canvas.height - bottomBarHeight, canvas.width, bottomBarHeight);
-
-            ctx.fillStyle = '#E68A2E'; 
-            ctx.fillRect(200 * scale, canvas.height - bottomBarHeight - (60 * scale), 800 * scale, 80 * scale);
-            
-            ctx.fillStyle = '#FFFFFF';
-            ctx.font = `bold ${40 * scale}px Arial`;
-            ctx.fillText(moduleName + " - " + company, 230 * scale, canvas.height - bottomBarHeight - (10 * scale));
-
-            ctx.fillStyle = '#D1D5DB';
-            ctx.fillRect(0, canvas.height - bottomBarHeight, 500 * scale, 50 * scale);
-            
-            const now = new Date();
-            const timeString = now.toLocaleString('pt-BR');
-            ctx.fillStyle = '#000000';
-            ctx.font = `${25 * scale}px Arial`;
-            ctx.fillText(`Data: ${timeString}`, 20 * scale, canvas.height - bottomBarHeight + (35 * scale));
-
-            ctx.beginPath();
-            ctx.arc(100 * scale, canvas.height - (70 * scale), 50 * scale, 0, Math.PI * 2);
-            ctx.fillStyle = '#374151';
-            ctx.fill();
-            
-            ctx.fillStyle = '#000000';
-            ctx.font = `bold ${45 * scale}px Arial`;
-            ctx.fillText(name, 180 * scale, canvas.height - (80 * scale));
-            
-            ctx.fillStyle = '#4B5563';
-            ctx.font = `${30 * scale}px Arial`;
-            ctx.fillText(role, 180 * scale, canvas.height - (40 * scale));
-
-            ctx.save();
-            ctx.translate(canvas.width - (30 * scale), canvas.height / 2);
-            ctx.rotate(-Math.PI / 2);
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-            ctx.font = `${20 * scale}px Courier`;
-            ctx.fillText(`GPS: ${currentLat.toFixed(6)}, ${currentLon.toFixed(6)} | Autenticado [D]²FR`, 0, 0);
-            ctx.restore();
-
-            return canvas.toDataURL('image/jpeg', 0.85);
-        }
-
-        function takePhoto() {
-            const base64Image = applyStamp();
-            const folderIdSelecionado = document.getElementById('modulo-select').value; 
-
-            const payload = {
-                image: base64Image,
-                folderId: folderIdSelecionado,
-                email: localStorage.getItem('userEmail'),
-                senha: localStorage.getItem('userSenha'),
-                timestamp: new Date().getTime()
-            };
-
-            const flash = document.createElement('div');
-            flash.style.position = 'absolute';
-            flash.style.top = '0'; flash.style.left = '0'; flash.style.width = '100%'; flash.style.height = '100%';
-            flash.style.backgroundColor = 'white'; flash.style.zIndex = '100';
-            document.body.appendChild(flash);
-            setTimeout(() => flash.remove(), 100);
-
-            if (navigator.onLine) {
-                uploadImage(payload, CONFIG_GAS_URL);
-            } else {
-                saveOffline(payload);
-            }
-        }
-
-        function uploadImage(payload, url) {
-            fetch(url, {
-                method: 'POST',
-                mode: 'no-cors', 
-                headers: { 'Content-Type': 'text/plain' },
-                body: JSON.stringify(payload)
-            }).then(() => {
-                alert("Foto inspecionada e enviada para o Drive!");
-            }).catch(err => {
-                alert("Instabilidade de rede. A guardar offline.");
-                saveOffline(payload);
-            });
-        }
-
-        function saveOffline(payload) {
-            let queue = JSON.parse(localStorage.getItem('photoQueue') || '[]');
-            queue.push(payload);
-            localStorage.setItem('photoQueue', JSON.stringify(queue));
-            updateQueueCount();
-        }
-
-        function updateQueueCount() {
-            let queue = JSON.parse(localStorage.getItem('photoQueue') || '[]');
-            const badge = document.getElementById('queue-count');
-            if (queue.length > 0) {
-                badge.innerText = queue.length;
-                badge.classList.remove('hidden');
-            } else {
-                badge.classList.add('hidden');
-            }
-        }
-
-        function syncOfflineQueue() {
-            if (!navigator.onLine) return alert("Ainda está offline.");
-            let queue = JSON.parse(localStorage.getItem('photoQueue') || '[]');
-            if (queue.length === 0) return alert("Nenhuma foto pendente.");
-
-            alert(`A sincronizar ${queue.length} fotos em segundo plano...`);
-            queue.forEach((payload) => {
-                 fetch(CONFIG_GAS_URL, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) });
-            });
-            localStorage.setItem('photoQueue', '[]');
-            updateQueueCount();
-        }
-
-        window.addEventListener('online', syncOfflineQueue);
         window.onload = () => {
-            updateQueueCount();
+            console.log("[SISTEMA] Aplicativo carregado. Iniciando rotinas...");
             checkSession();
         };
     </script>

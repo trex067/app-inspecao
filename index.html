@@ -127,13 +127,14 @@
                 return alert("Preencha e-mail e senha.");
             }
             
-            if(CONFIG_GAS_URL === "https://script.google.com/macros/s/AKfycbyYcjMX8exgy-b1HwZ2dCvQVxynFwpeAFfYXiBKBgLnlWTDt_HvKf61k0ukp_B5LK2fWA/exec") {
-                console.error("[CRÍTICO] O robô do GitHub não substituiu a URL! A variável continua como 'https://script.google.com/macros/s/AKfycbyYcjMX8exgy-b1HwZ2dCvQVxynFwpeAFfYXiBKBgLnlWTDt_HvKf61k0ukp_B5LK2fWA/exec'. O sistema vai abortar a conexão para não travar.");
-                return alert("ERRO DO SISTEMA: O servidor não configurou a URL secreta corretamente. Contate o administrador.");
+            if(!email || !senha) {
+                console.log("[LOGIN] Erro: Campos vazios.");
+                return alert("Preencha e-mail e senha.");
             }
 
-            console.log("[LOGIN] A URL parece estar configurada corretamente. Iniciando conexão com o Google Sheets...");
+            console.log("[LOGIN] A URL parece estar configurada corretamente...");
             const btn = document.getElementById('btn-login');
+
             btn.innerText = "Sincronizando Dados...";
             btn.disabled = true;
 
